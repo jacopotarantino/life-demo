@@ -1,67 +1,118 @@
 <html>
 <head>
+
+<style>
+span {
+	background: #99f;
+	display: block;
+	height: 10px;
+	width: 10px;
+	float: left;
+	margin: 1px;
+	padding::;
+}
+
+.alive {
+	background:#c11;
+}
+</style>
 <script type="text/javascript">
 var Board;
-var xsize = 10;
-var ysize = 10;
+var xsize = 20;
+var ysize = 20;
 
 var dead = 0;
 var alive = 1;
 
 function Neighbors(Board, x, y)
 {
-	var n = 0
-	for(dx=-1;dx < 1; ++dx)
-		for(dy=-1;dy < 1; ++dy)
-		{
-			var ax = x+dx;
-    		var ay = y+dy;
-    		if(Board[ax][ay]==alive) ++n;
-		}
+	var n = 0;
+
+	// create a map of your friendly neighborhood doodles.
+	var nbs = [
+		[(x-1),(y-1)]
+		, [x, y-1]
+		, [x+1, y-1]
+		, [x-1, y]
+		, [x+1, y]
+		, [x-1,y+1]
+		, [x, y+1]
+		, [x+1, y+1]
+	];
+	// if there are outliers, wrap them.
+	for(var i=0; i<nbs.length; i++) {
+		if(nbs[i][0] < 0) nbs[i][0] = xsize + nbs[i][0];
+		if(nbs[i][1] < 0) nbs[i][1] = ysize + nbs[i][1];
+
+		if(nbs[i][0] >= xsize) nbs[i][0] = nbs[i][0] - xsize;
+		if(nbs[i][1] >= ysize) nbs[i][1] = nbs[i][1] - ysize;
+	}
+
+	for(i=0;i<nbs.length;i++) {
+		if(Board[nbs[i][0]][nbs[i][1]] == alive) ++n;
+	}
 	return n;
 }
 
-function Kill(Board,x,y)
+function Kill(newBoard,x,y)
 {
-	if(Board[x][y] == alive)
-		Board[x][y] = dead;
+	if(newBoard[x][y] == alive)
+		newBoard[x][y] = dead;
 }
 
-function MakeLive(Board,x,y)
+function MakeLive(newBoard,x,y)
 {
-	if(Board[x][y] == dead)
-		Board[x][y] = alive;
+	if(newBoard[x][y] == dead)
+		newBoard[x][y] = alive;
 }
 
 function NextStep(Board)
 {
-	for(var x = 0; x <= xsize; ++x)
-	{
-		for(var y = 0; y <= ysize; ++x)
-		{
-			n = Neighbors(Board,x,y);
-			if(n=3) MakeLive(Board,x,y);
-			if((n<2)||(n>3)) Kill(Board,x,y);
+	var newBoard = new Array(xsize);
+
+	for(var i=0;i<Board.length;i++) {
+		newBoard[i] = new Array(ysize);
+		for(var a=0;a<Board[i].length;a++) {
+			newBoard[i][a] = Board[i][a];
 		}
 	}
+	for(var x = 0; x < xsize; x++)
+	{
+		for(var y = 0; y < ysize; y++)
+		{
+			n = Neighbors(Board,x,y);
+			if(n==3) MakeLive(newBoard,x,y);
+			if((n<2)||(n>3)) Kill(newBoard,x,y);
+		}
+	}
+
+	return newBoard;
 }
 
-function DrawBoard(Board)
+function DrawBoard(newBoard)
 {
-	var Text = "";
+	var t = document.createElement('div');
 	for(var y = 0; y < ysize; ++y)
 	{
 		for(var x = 0; x < xsize; ++x)
-			Text += Board[x][y]==alive ? "o":"_";
-		Text += "<br/>";
+			if(newBoard[x][y]==alive) {
+				var s = document.createElement('span');
+				s.className='alive';
+				t.appendChild(s);
+			} else {
+				t.appendChild(document.createElement('span'));
+			}
+		t.appendChild(document.createElement('br'));
 	}
-	document.getElementById("board").innerHTML = Text;
+	document.getElementById("board").innerHTML = '';
+	document.getElementById("board").appendChild(t);
+	window.Board = newBoard;
 }
 
 function Main()
 {
-    // *** Change this variable to choose a different baord setup from below
-    var BoardSetup = "blinker";
+    // *** Change this variable to choose a different board setup from below
+    var BoardSetup = "flower";
     
 	Board = new Array(xsize);
 	for(var x = 0; x < xsize; ++x)
@@ -109,11 +160,18 @@ function Main()
     
 	DrawBoard(Board);
 }
+
+function Play() {
+	document.getElementById('button').style.display='none';
+	setInterval(function() {
+		DrawBoard(NextStep(Board));
+	}, 800);
+}
 </script>
 </head>
 <body onload="Main()">
 <div id="board">
 </div>
-<a href="#IGoNowhere" onclick="NextStep(Board);DrawBoard(Board);">Next -></a>
+<a href="#IGoNowhere" id='button' onclick="Play();">Play -></a>
 </body>
 </html>
